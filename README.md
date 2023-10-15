@@ -630,3 +630,48 @@ select * from tb_ProdutoHistorico;
 
 -------------------------------------------------------------------------------------
 
+-- ex 19 --
+delimiter &&
+create trigger trgProdHist after insert on tbProduto
+	for each row
+  begin
+  insert into tb_ProdutoHistorico
+		set CodigoBarras = new.CodigoBarras,
+			Nome = new.Nome,
+            Valor = new.Valor,
+            Qtd = new.Qtd,
+            ocorrencia = 'Novo',
+            atualizacao = current_timestamp();
+  end; &&
+  
+select * from tbProdutoHistorico;
+
+call spinsertproduto(12345678910119, 'Água mineral', 1.99, 500);
+
+-- ver os registros --
+select * from tbProduto;
+select * from tb_ProdutoHistorico;
+
+------------------------------------------------------------------------------------
+-- ex 20 --
+delimiter &&
+create trigger trgprodhistupd before update on tbProduto
+	for each row
+  begin
+  insert into tb_ProdutoHistorico
+		set CodigoBarras = new.CodigoBarras,
+			Nome = new.Nome,
+            Valor = new.Valor,
+            Qtd = new.Qtd,
+            ocorrencia = 'Atualizado',
+            atualizacao = current_timestamp();
+  end; &&
+
+call spattprod(12345678910119, 'Água mineral', 2.99);
+
+-- ver os registros --
+select * from tbProduto;
+select * from tb_ProdutoHistorico;
+
+-------------------------------------------------------------------------------------
+
