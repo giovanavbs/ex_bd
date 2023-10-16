@@ -674,4 +674,50 @@ select * from tbProduto;
 select * from tb_ProdutoHistorico;
 
 -------------------------------------------------------------------------------------
+-- ex 21 
 
+select * from tbProduto;
+ ------------------------------------------------------------
+ -- ex 22
+ 
+ select * from tbCliente;
+select * from tbProduto;
+select * from tbVenda;
+
+call spInsertVenda(4, "Disney Chaplin", 12345678910111, 64.500, 1, 64.500, null);  
+
+-- ex 23
+select * from tbVenda order by NumeroVenda desc limit 1;
+
+-- ex 24
+select * from tbItemVenda order by NumeroVenda desc limit 1;
+
+-- ex 25
+delimiter &&
+create procedure spselectcli(vNomeCli varchar (200))
+begin
+
+	IF EXISTS(select ID from tbCliente where NomeCli = vNomeCli) then
+		select * from tbCliente where NomeCli = vNomeCli;
+
+    end if;
+end &&
+
+select * from tbCliente;
+call spselectcli('Disney Chaplin');
+
+-- ex 26
+-- consertado
+
+-- ex 27
+ select * from tbCliente;
+select * from tbProduto;
+select * from tbVenda;
+
+call spInsertVenda(5, "bola furada", 12345678910114, 10,00, 15, 64.500, null);  
+-- arrumar procedure venda x qtd
+
+-- ex 28
+select * from tbProduto;
+
+-- ex 29
