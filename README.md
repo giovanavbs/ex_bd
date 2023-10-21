@@ -427,25 +427,25 @@ select * from tbItemCompra;
 ----------------------------------------------------------------------------------
 -- ex 10
 drop procedure spInsertVenda;
-
 delimiter &&
-create procedure spinsertvenda(vNumeroVenda int, vNomeCli varchar(200), vCodigoBarras numeric(14), vValorItem decimal(8,3), vQtd int, vTotalVenda decimal(8,3), vNF int)
+create procedure spinsertvenda(vNumeroVenda int, vNomeCli varchar(200), vCodigoBarras numeric(14), vValorItem decimal(8,3), vQtd int, vNF int)
 begin 
 
 		if (select ID from tbCliente where NomeCli = vNomeCli) then 
 			set @ID = (select ID from tbCliente where NomeCli = vNomeCli);
             set @NotaFiscal = (select NF from tbNota_Fiscal where NF = vNF);
+            set @total = (select valor from tbProduto where CodigoBarras = vCodigoBarras) * vQtd;
             -- atualizar tbProduto quando uma venda for feita
-            set @qtd = (select qtd from tbProduto where CodigoBarras = vCodigoBarras) - vQtd;
+            set @qtd2 = (select qtd from tbProduto where CodigoBarras = vCodigoBarras) - vQtd;
             
             if (select CodigoBarras from tbProduto where CodigoBarras = vCodigoBarras) then
 				if not exists (select NumeroVenda from tbVenda where NumeroVenda = vNumeroVenda) then 
 					insert into tbvenda (NumeroVenda, DataVenda, TotalVenda, ID_Cli, NF) 
-						values (vNumeroVenda, current_date(), vTotalVenda, @ID, vNF);
+						values (vNumeroVenda, current_date(), @total, @ID, vNF);
                         
                     insert into tbItemVenda (NumeroVenda, CodigoBarras, ValorItem, Qtd) 
 						values (vNumeroVenda, vCodigoBarras, vQtd, vValorItem);
-                    update tbproduto set qtd = @qtd where CodigoBarras = vCodigoBarras;
+                    update tbproduto set qtd = @qtd2 where CodigoBarras = vCodigoBarras;
 				end if;
             end if;
 		end if;
@@ -453,9 +453,9 @@ end &&
 describe tbItemVenda;
 describe tbNota_Fiscal;
 
-call spInsertVenda(1, "Pimpão", 12345678910111, 54.61, 1, 54.61, null);
-call spInsertVenda(2, "Lança Perfume", 12345678910112, 100.45, 2, 200.90, null);
-call spInsertVenda(3, "Pimpão", 12345678910113, 44.00, 1, 44.00, null);  
+call spInsertVenda(1, "Pimpão", 12345678910111, 54.61, 1, null);
+call spInsertVenda(2, "Lança Perfume", 12345678910112, 100.45, 2, null);
+call spInsertVenda(3, "Pimpão", 12345678910113, 44.00, 1, null);  
 
 -- ver os registros --
 select * from tbVenda;
