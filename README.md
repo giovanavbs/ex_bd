@@ -123,10 +123,11 @@ use dbdistribuidora;
 
 SELECT * FROM tbFornecedor;
 describe tbFornecedor;
+
+
 delimiter &&
 create procedure spinsertForne(vCNPJ decimal(14,0), vNome varchar (200), vTelefone decimal (11,0))
 begin
-
 	IF NOT EXISTS (select CNPJ from tbFornecedor where CNPJ = vCNPJ) then
     insert into tbFornecedor(CNPJ, Nome, Telefone)
         values(vCNPJ, vNome, vTelefone);
@@ -458,7 +459,7 @@ describe tbNota_Fiscal;
 call spInsertVenda(1, "Pimpão", 12345678910111, 54.61, 1, null);
 call spInsertVenda(2, "Lança Perfume", 12345678910112, 100.45, 2, null);
 call spInsertVenda(3, "Pimpão", 12345678910113, 44.00, 1, null);  
-call spInsertVenda(5, "bola furada", 12345678910114, 10.00, 15, null);  
+
 -- ver os registros --
 select * from tbVenda;
 select * from tbItemVenda;
@@ -473,7 +474,6 @@ describe tbCliente;
 describe tbVenda;
 describe tbNota_Fiscal;
 
-drop procedure spInsertNF;
 
 delimiter &&
 create procedure spinsertNF(vNF int, vNomeCli varchar(200))
@@ -593,7 +593,7 @@ create trigger trgProdHist after insert on tbProduto
             atualizacao = current_timestamp();
   end; &&
   
-select * from tbProdutoHistorico;
+select * from tb_ProdutoHistorico;
 
 call spinsertproduto(12345678910119, 'Água mineral', 1.99, 500);
 
@@ -626,11 +626,6 @@ select * from tb_ProdutoHistorico;
 -- ex 21 
 select * from tbProduto;
 -- ex 22
- 
- select * from tbCliente;
-select * from tbProduto;
-select * from tbVenda;
-
 call spInsertVenda(4, "Disney Chaplin", 12345678910111, 64.500, 1, null);  
 
 -- ex 23
@@ -654,18 +649,59 @@ select * from tbCliente;
 call spselectcli('Disney Chaplin');
 
 -- ex 26
--- consertado
+-- consertado na procedure ex 9
+create trigger trgprodqtd after insert on tbVenda
+	for each row
+  begin
+		set @qtd = (select qtd from tbItemVenda);
+  insert into tbProduto
+		set Qtd = Qtd - @Qtd
+        where CodigoBarras = vCodigoBarras;
+  end
+  &&
+  
+  select * from tbProduto;
+select * from tbItemVenda;
 
 -- ex 27
  select * from tbCliente;
 select * from tbProduto;
 select * from tbVenda;
 
-call spInsertVenda(5, "bola furada", 12345678910114, 10.00, 15, 64.500, null);  
-
+call spInsertVenda(5, "Paganada", 12345678910114, 10.00, 15, null);  
 
 -- ex 28
 select * from tbProduto;
 
 -- ex 29
--- consertado
+-- consertado na procedure ex 10
+
+-- ex 30
+call spinsertcompra (10548,'amoroso e doce',str_to_date('10/09/2023', '%d/%m/%Y'), 12345678910111, 40.00, 100, 4000.00);
+
+select * from tbCompra;
+select * from tbItemCompra;
+
+-- ex 31
+call spselectproduto();
+
+-- ex 32
+select * 
+from tbCliente
+inner join tbClientePF
+ON tbCliente.ID = tbClientePF.ID;
+
+-- ex 33
+select * 
+from tbCliente
+inner join tbClientePJ
+ON tbCliente.ID = tbClientePJ.ID;
+
+-- ex 34
+select tbCliente.ID, tbClientePJ
+from tbCliente
+inner join tbClientePJ
+ON tbCliente.ID = tbClientePJ.ID;
+
+
+
