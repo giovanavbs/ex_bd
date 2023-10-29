@@ -649,41 +649,48 @@ select * from tbCliente;
 call spselectcli('Disney Chaplin');
 
 -- ex 26
--- consertado na procedure ex 9
-create trigger trgprodqtd after insert on tbVenda
-	for each row
-  begin
-		set @qtd = (select qtd from tbItemVenda);
-  insert into tbProduto
-		set Qtd = Qtd - @Qtd
-        where CodigoBarras = vCodigoBarras;
-  end
-  &&
-  
-  select * from tbProduto;
-select * from tbItemVenda;
+describe tbproduto;
+describe tbitemvenda;
+
+delimiter &&
+create trigger trgattqtd after insert on tbitemvenda
+for each row
+begin
+    update tbProduto set qtd = (qtd - new.qtd) where CodigoBarras = new.CodigoBarras;
+end
+&&
 
 -- ex 27
- select * from tbCliente;
 select * from tbProduto;
 select * from tbVenda;
 
 call spInsertVenda(5, "Paganada", 12345678910114, 10.00, 15, null);  
 
 -- ex 28
-select * from tbProduto;
+call spselectproduto;
 
 -- ex 29
--- consertado na procedure ex 10
+select * from tbitemcompra;
+select * from tbproduto;
+
+delimiter &&
+create trigger trgattqtdcompra after insert on tbitemcompra
+for each row
+begin
+    update tbProduto set qtd = (qtd + new.qtd) where CodigoBarras = new.CodigoBarras;
+end
+&&
 
 -- ex 30
-call spinsertcompra (10548,'amoroso e doce',str_to_date('10/09/2023', '%d/%m/%Y'), 12345678910111, 40.00, 100, 4000.00);
+select * from tbfornecedor;
+select * from tbcompra;
+select * from tbitemcompra;
+select * from tbproduto;
 
-select * from tbCompra;
-select * from tbItemCompra;
+call spInsertCompra(10548, 'Amoroso e Doce', str_to_date('10/09/2022','%d/%m/%Y'), 12345678910111, 40.00,  100, 4000.00);
 
 -- ex 31
-call spselectproduto();
+call spselectproduto;
 
 -- ex 32
 select * 
@@ -702,6 +709,51 @@ select tbCliente.ID, tbClientePJ
 from tbCliente
 inner join tbClientePJ
 ON tbCliente.ID = tbClientePJ.ID;
+
+
+-- ex 35
+describe tbClientePF;
+describe tbCliente;
+
+select tbCliente.ID as codigo, tbCliente.NomeCli as nome, tbClientePF.CPF as CPF, tbClientePF.RG as RG, tbClientePF.Nasc as "data de nascimento"
+from tbCliente
+inner join tbClientePF on tbCliente.ID = tbClientePF.ID;
+
+
+-- ex 36
+describe tbClientePJ;
+describe tbCliente;
+describe tbEndereco;
+
+select tbCliente.ID, tbCliente.NomeCli, tbCliente.NumEnd, tbCliente.CompEnd, tbCliente.CepCli, tbClientePJ.CNPJ, tbClientePJ.IE, tbClientePJ.ID, 
+tbEndereco.logradouro, tbEndereco.BairroID, tbEndereco.CidadeID, tbEndereco.UFID, tbEndereco.CEP
+from tbCliente
+inner join tbClientePJ on tbCliente.ID = tbClientePJ.ID
+inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli;
+
+- ex 37
+select * from tbCliente;
+select * from tbcidade;
+select * from tbbairro;
+select * from tbestado;
+
+select tbCliente.ID, tbcliente.NomeCli, tbcliente.NumEnd, tbcliente.CompEnd, tbcliente.CepCli, tbClientePJ.CNPJ, tbClientePJ.IE, tbClientePJ.ID, 
+tbEndereco.logradouro, tbEndereco.BairroID, tbEndereco.CidadeID, tbEndereco.UFID, tbEndereco.CEP
+from tbCliente
+inner join tbClientePJ on tbCliente.ID = tbClientePJ.ID
+inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli;
+inner join tbEndereco on tbEndereco.BairroID = tbBairro.BairroID;
+
+-- tbCidade.Cidade, tbbairro.Bairro, tbEstado.UF / tbCidade.CidadeID, tbbairro.BairroID, tbEstado.UFID
+
+select tbCliente.ID, tbcliente.NomeCli, tbcliente.NumEnd, tbcliente.CompEnd, tbcliente.CepCli, tbClientePJ.CNPJ, tbClientePJ.IE, tbClientePJ.ID, 
+tbEndereco.logradouro, tbEndereco.BairroID, tbEndereco.CidadeID, tbEndereco.UFID, tbEndereco.CEP
+from tbCliente
+inner join tbClientePJ on tbCliente.ID = tbClientePJ.ID
+inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli;
+inner join tbBairro on tbBairro.Bairro = tbEndereco.BairroID;
+inner join tbCidade on tbCidade.Cidade = tbEndereco.BairroID;
+inner join tbEstado on tbEstado.UF = tbEndereco.UFID;
 
 
 
