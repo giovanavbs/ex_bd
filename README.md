@@ -404,7 +404,6 @@ begin
 	        if not exists(select CodigoBarras from tbItemCompra where (CodigoBarras = vCodigoBarras) and (NotaFiscal = vNotaFiscal))then
 				insert into tbItemCompra(NotaFiscal, CodigoBarras, ValorItem, Qtd)
 				values(vNotaFiscal, vCodigoBarras, vValorItem, vQtdTotal);
-                update tbproduto set qtd = @qtd where CodigoBarras = vCodigoBarras;
             end if;
             
 end 
@@ -438,8 +437,6 @@ begin
 			set @ID = (select ID from tbCliente where NomeCli = vNomeCli);
             set @NotaFiscal = (select NF from tbNota_Fiscal where NF = vNF);
             set @total = (select valor from tbProduto where CodigoBarras = vCodigoBarras) * vQtd;
-            -- atualizar tbProduto quando uma venda for feita
-            set @qtd = (select qtd from tbProduto where CodigoBarras = vCodigoBarras) - vQtd;
             
             if (select CodigoBarras from tbProduto where CodigoBarras = vCodigoBarras) then
 				if not exists (select NumeroVenda from tbVenda where NumeroVenda = vNumeroVenda) then 
@@ -447,8 +444,7 @@ begin
 						values (vNumeroVenda, current_date(), @total, @ID, vNF);
                         
                     insert into tbItemVenda (NumeroVenda, CodigoBarras, ValorItem, Qtd) 
-						values (vNumeroVenda, vCodigoBarras, vQtd, vValorItem);
-                    update tbproduto set qtd = @qtd where CodigoBarras = vCodigoBarras;
+						values (vNumeroVenda, vCodigoBarras, vValorItem, vQtd);
 				end if;
             end if;
 		end if;
@@ -458,7 +454,7 @@ describe tbNota_Fiscal;
 
 call spInsertVenda(1, "Pimpão", 12345678910111, 54.61, 1, null);
 call spInsertVenda(2, "Lança Perfume", 12345678910112, 100.45, 2, null);
-call spInsertVenda(3, "Pimpão", 12345678910113, 44.00, 1, null);  
+call spInsertVenda(3, "Pimpão", 12345678910113, 44.00, 1, null);   
 
 -- ver os registros --
 select * from tbVenda;
@@ -662,6 +658,7 @@ end
 
 -- ex 27
 select * from tbProduto;
+SELECT * FROM tbitemvenda;
 select * from tbVenda;
 
 call spInsertVenda(5, "Paganada", 12345678910114, 10.00, 15, null);  
@@ -687,7 +684,7 @@ select * from tbcompra;
 select * from tbitemcompra;
 select * from tbproduto;
 
-call spInsertCompra(10548, 'Amoroso e Doce', str_to_date('10/09/2022','%d/%m/%Y'), 12345678910111, 40.00,  100, 4000.00);
+call spInsertCompra(10548, 'Amoroso e Doce', str_to_date('10/09/2022','%d/%m/%Y'), 12345678910111, 40.00, 100, 4000.00);
 
 -- ex 31
 call spselectproduto;
@@ -731,29 +728,52 @@ from tbCliente
 inner join tbClientePJ on tbCliente.ID = tbClientePJ.ID
 inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli;
 
-- ex 37
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- ex 37
+select * from tbEndereco;
 select * from tbCliente;
 select * from tbcidade;
 select * from tbbairro;
 select * from tbestado;
 
-select tbCliente.ID, tbcliente.NomeCli, tbcliente.NumEnd, tbcliente.CompEnd, tbcliente.CepCli, tbClientePJ.CNPJ, tbClientePJ.IE, tbClientePJ.ID, 
-tbEndereco.logradouro, tbEndereco.BairroID, tbEndereco.CidadeID, tbEndereco.UFID, tbEndereco.CEP
-from tbCliente
+select tbCliente.ID, tbcliente.NomeCli, tbcliente.CepCli, tbEndereco.logradouro, tbcliente.NumEnd, tbcliente.CompEnd, tbbairro.Bairro, tbCidade.Cidade, tbEstado.UF
+from tbCliente 
 inner join tbClientePJ on tbCliente.ID = tbClientePJ.ID
-inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli;
-inner join tbEndereco on tbEndereco.BairroID = tbBairro.BairroID;
+inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli
+inner join tbBairro on tbEndereco.BairroID = tbBairro.BairroID
+inner join tbCidade on tbEndereco.CidadeID = tbCidade.CidadeID
+inner join tbEstado on tbEndereco.UFID = tbEstado.UFID;
 
--- tbCidade.Cidade, tbbairro.Bairro, tbEstado.UF / tbCidade.CidadeID, tbbairro.BairroID, tbEstado.UFID
+-- ex 38
+DESCRIBE tbCliente;
+select * from tbClientePF;
+select * from tbEndereco;
 
-select tbCliente.ID, tbcliente.NomeCli, tbcliente.NumEnd, tbcliente.CompEnd, tbcliente.CepCli, tbClientePJ.CNPJ, tbClientePJ.IE, tbClientePJ.ID, 
-tbEndereco.logradouro, tbEndereco.BairroID, tbEndereco.CidadeID, tbEndereco.UFID, tbEndereco.CEP
-from tbCliente
-inner join tbClientePJ on tbCliente.ID = tbClientePJ.ID
-inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli;
-inner join tbBairro on tbBairro.Bairro = tbEndereco.BairroID;
-inner join tbCidade on tbCidade.Cidade = tbEndereco.BairroID;
-inner join tbEstado on tbEstado.UF = tbEndereco.UFID;
+drop procedure spselectclipf;
+delimiter &&
+create procedure spselectclipf(vID int)
+begin
+		select tbCliente.ID as codigo, tbcliente.NomeCli as nome, tbClientePF.CPF as CPF, tbClientePF.RG as rg, tbClientePF.RG_Dig as Digito, 
+        tbClientePF.Nasc as 'data de nascimento', tbcliente.CepCli as cep, tbEndereco.logradouro, tbcliente.NumEnd as 'numero endereço', tbcliente.CompEnd as 'complemento endereço', 
+        tbbairro.Bairro, tbCidade.Cidade, tbEstado.UF
+		from tbCliente
+		inner join tbClientePF on tbCliente.ID = tbClientePF.ID
+		inner join tbEndereco on tbEndereco.CEP = tbCliente.CepCli
+		inner join tbBairro on tbEndereco.BairroID = tbBairro.BairroID
+		inner join tbCidade on tbEndereco.CidadeID = tbCidade.CidadeID
+		inner join tbEstado on tbEndereco.UFID = tbEstado.UFID
+		where tbCliente.ID = vID;
+    
+end &&
 
+call spselectclipf(2);
+call spselectclipf(5);
 
+-- ex 39
+select * from tbItemVenda;
+select * from tbProduto;
 
+select tbProduto.CodigoBarras, tbProduto.Nome, tbProduto.Valor, tbProduto.Qtd, tbItemVenda.Qtd, tbItemVenda.ValorItem, tbItemVenda.CodigoBarras, tbItemVenda.NumeroVenda
+from tbItemVenda
+inner join tbProduto on tbProduto.CodigoBarras = tbItemVenda.CodigoBarras;
