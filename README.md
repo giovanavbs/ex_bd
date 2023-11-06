@@ -390,34 +390,33 @@ drop procedure spinsertcompra;
 
 delimiter &&
 create procedure spinsertcompra(vNotaFiscal int, vNome varchar(200), vDataCompra date, vCodigoBarras numeric(14), vValorItem decimal(8,3), vQtdTotal int, vValorTotal decimal(8,2))
-begin
-
-	-- atualizar tbProduto quando uma compra for feita
-            set @qtd = (select qtd from tbProduto where CodigoBarras = vCodigoBarras) + vQtdTotal;
-            
-		if not exists(select NotaFiscal from tbCompra where NotaFiscal = vNotaFiscal) then
-			if exists(select Nome from tbFornecedor where Nome = vNome) and (select CodigoBarras from tbProduto where CodigoBarras = vCodigoBarras) then
-				insert into tbCompra(NotaFiscal, DataCompra, ValorTotal, QtdTotal, Cod)
-				values(vNotaFiscal, vDataCompra, vValorTotal, vQtdTotal, (select Cod from tbFornecedor where Nome = vNome));
-			end if;
-		end if;
-	        if not exists(select CodigoBarras from tbItemCompra where (CodigoBarras = vCodigoBarras) and (NotaFiscal = vNotaFiscal))then
-				insert into tbItemCompra(NotaFiscal, CodigoBarras, ValorItem, Qtd)
-				values(vNotaFiscal, vCodigoBarras, vValorItem, vQtdTotal);
+begin 
+if (select Cod from tbFornecedor where Nome = vNome) then
+			set @fornecedor = (select Cod from tbFornecedor where Nome = vNome);
+            if not exists (select NF from tbNota_Fiscal where NF = vNotaFiscal) then
+				insert into tbNota_Fiscal(NF, TotalNota, DataEmissao) 
+                values (vNotaFiscal, vValorTotal, vDataCompra);
+                insert into tbCompra(NotaFiscal, DataCompra, ValorTotal, QtdTotal, Cod) 
+                values (vNotaFiscal, vDataCompra, vValorTotal, vQtdTotal, @fornecedor);
+                insert into tbItemCompra(Qtd, ValorItem, NotaFiscal, CodigoBarras) 
+                values (vQtdTotal, vValorItem, vNotaFiscal, vCodigoBarras);
+			else
+				if not exists(select * from tbItemCompra where NotaFiscal = vNotaFiscal and CodigoBarras = vCodigoBarras) then
+					insert into tbItemCompra(Qtd, ValorItem, NotaFiscal, CodigoBarras) 
+                    values (vQtdTotal, vValorItem, vNotaFiscal, vCodigoBarras);
+				end if;
             end if;
-            
-end 
-&&    
+		end if;
+        
+end &&
 
-
-select * from tbItemCompra;
 call spinsertcompra (8459,'amoroso e doce',str_to_date('01/05/2018', '%d/%m/%Y'), 12345678910111, 22.22, 700, 21944.00);
 call spinsertcompra (2482,'revenda chico loco',str_to_date('22/04/2020','%d/%m/%Y'), 12345678910112, 40.50, 180, 7290.00);
 call spinsertcompra (21563,'marcelo dedal',str_to_date('12/07/2020','%d/%m/%Y'), 12345678910113, 3.00, 300, 900.00);
 call spinsertcompra (8459,'amoroso e doce',str_to_date('01/05/2018','%d/%m/%Y'),12345678910114, 35.00, 500, 21944.00);
 call spinsertcompra (156354,'revenda chico loco',str_to_date('23/11/2021','%d/%m/%Y'), 12345678910115, 54.00, 350, 18900.00); 
 
-
+SELECT * FROM tbNota_Fiscal;
 select * from tbCompra;
 select * from tbItemCompra;
 DESCRIBE tbCompra;
@@ -774,6 +773,15 @@ call spselectclipf(5);
 select * from tbItemVenda;
 select * from tbProduto;
 
-select tbProduto.CodigoBarras, tbProduto.Nome, tbProduto.Valor, tbProduto.Qtd, tbItemVenda.Qtd, tbItemVenda.ValorItem, tbItemVenda.CodigoBarras, tbItemVenda.NumeroVenda
-from tbItemVenda
-inner join tbProduto on tbProduto.CodigoBarras = tbItemVenda.CodigoBarras;
+select * from tbProduto  left join tbItemVenda ON tbItemVenda.CodigoBarras = tbProduto.CodigoBarras
+union
+select * from tbProduto  right join tbItemVenda on tbItemVenda.CodigoBarras = tbProduto.CodigoBarras
+
+-- ex 40
+select * from tbNota_Fiscal;
+select * from tbFornecedor;
+SELECT * FROM tbCompra;
+
+select * from tbCompra
+RIGHT JOIN tbFornecedor
+on tbFornecedor.Cod = tbCompra.Cod;
